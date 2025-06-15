@@ -534,7 +534,7 @@ def _unwrap_group(val: Any) -> Any:
     return None
 
 
-def parse_where_to_filter(query: str) -> models.Filter:
+def sfilter2qfilter(query: str) -> models.Filter:
     """Parse a SQL-like WHERE clause string into a Qdrant Filter object."""
     tree = qdrant_filter_grammar.parse(query)
     visitor = QdrantFilterVisitor()

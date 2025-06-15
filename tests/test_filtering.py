@@ -1,13 +1,13 @@
 import pytest
 from qdrant_client.http import models
-from src.qdrant_vsql.filtering import parse_where_to_filter
+from src.qdrant_vsql.filtering import sfilter2qfilter
 from datetime import datetime
 import uuid
 
 
 def test_in_or_range():
     query = "color IN ('red','black') OR age >= 17"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         should=[
             models.FieldCondition(
@@ -31,7 +31,7 @@ def test_in_or_range():
     ],
 )
 def test_and_not_equal_both_operators(query):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -54,7 +54,7 @@ def test_and_not_equal_both_operators(query):
 
 def test_and_gt_bool():
     query = "salary > 50000 AND active = TRUE"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(key="salary", range=models.Range(gt=50000)),
@@ -68,7 +68,7 @@ def test_and_datetime_range():
     dt_gte_val = datetime.fromisoformat("2023-01-01T00:00:00")
     dt_lt_val = datetime.fromisoformat("2024-01-01T00:00:00")
     query = f"created_at >= '{dt_gte_val.isoformat()}' AND created_at < '{dt_lt_val.isoformat()}'"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -111,7 +111,7 @@ def test_and_datetime_range():
     ],
 )
 def test_in_list_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -135,7 +135,7 @@ def test_in_list_conditions(query, expected_filter):
     ],
 )
 def test_between_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -171,7 +171,7 @@ def test_between_conditions(query, expected_filter):
     ],
 )
 def test_simple_equality_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -193,13 +193,13 @@ def test_simple_equality_conditions(query, expected_filter):
     ],
 )
 def test_null_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
 def test_or_and_bool():
     query = "(country = 'US' OR country = 'CA') AND verified = FALSE"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.Filter(
@@ -242,13 +242,13 @@ def test_or_and_bool():
     ],
 )
 def test_count_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
 def test_nested_field():
     query = "user.address.city = 'London'"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -261,7 +261,7 @@ def test_nested_field():
 
 def test_array_in():
     query = "metadata.tags IN ('urgent','todo')"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -274,7 +274,7 @@ def test_array_in():
 
 def test_complex_combined():
     query = "((status = 'live' AND views > 1000) OR priority IN ('high','urgent')) AND archived = FALSE AND comments_count BETWEEN 1 AND 10"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.Filter(
@@ -305,7 +305,7 @@ def test_complex_combined():
 
 def test_and_float_bool():
     query = "rating >= 4.5 AND published = TRUE"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(key="rating", range=models.Range(gte=4.5)),
@@ -318,7 +318,7 @@ def test_and_float_bool():
 def test_and_isnotnull_and_lt():
     dt_lt_val = datetime.fromisoformat("2025-04-01T12:00:00")
     query = f"last_login IS NOT NULL AND last_login < '{dt_lt_val.isoformat()}'"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -335,7 +335,7 @@ def test_and_isnotnull_and_lt():
 
 def test_empty_string():
     query = "notes = ''"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[models.FieldCondition(key="notes", match=models.MatchValue(value=""))]
     )
@@ -344,7 +344,7 @@ def test_empty_string():
 
 def test_empty_array():
     query = "attachments = []"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="attachments"))]
     )
@@ -353,7 +353,7 @@ def test_empty_array():
 
 def test_nested_array_projection():
     query = "diet[].food = 'meat' AND diet[].likes = true"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -393,7 +393,7 @@ def test_nested_array_projection():
     ],
 )
 def test_id_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -415,7 +415,7 @@ def test_id_conditions(query, expected_filter):
     ],
 )
 def test_empty_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -437,7 +437,7 @@ def test_empty_conditions(query, expected_filter):
     ],
 )
 def test_string_match_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -477,7 +477,7 @@ def test_string_match_conditions(query, expected_filter):
     ],
 )
 def test_range_and_count_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -500,7 +500,7 @@ def test_range_and_count_conditions(query, expected_filter):
     ],
 )
 def test_complex_negation_logic(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -526,7 +526,7 @@ def test_complex_negation_logic(query, expected_filter):
     ],
 )
 def test_not_in_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -548,13 +548,13 @@ def test_not_in_conditions(query, expected_filter):
     ],
 )
 def test_is_null_and_not_null_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
 def test_nested_and_or_not():
     query = "(a = 1 OR b = 2) AND NOT (c = 3 OR d = 4)"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.Filter(
@@ -606,7 +606,7 @@ def test_nested_and_or_not():
     ],
 )
 def test_case_insensitive_null_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -640,7 +640,7 @@ def test_case_insensitive_null_conditions(query, expected_filter):
     ],
 )
 def test_case_insensitive_boolean_conditions(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
@@ -741,14 +741,14 @@ def test_case_insensitive_boolean_conditions(query, expected_filter):
     ],
 )
 def test_case_insensitive_keyword_combinations(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
 # --- NESTED FIELD AND NESTED OBJECT FILTER TESTS ---
 def test_dot_notation_nested_field():
     query = "country.name = 'Germany'"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -761,7 +761,7 @@ def test_dot_notation_nested_field():
 
 def test_array_projection_nested():
     query = "country.cities[].population >= 9.0"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must=[
             models.FieldCondition(
@@ -799,13 +799,13 @@ def test_array_projection_nested():
     ],
 )
 def test_escaped_string_values(query, expected_filter):
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     assert result == expected_filter
 
 
 def test_not_single_condition():
     query = "NOT active = TRUE"
-    result = parse_where_to_filter(query)
+    result = sfilter2qfilter(query)
     expected = models.Filter(
         must_not=[models.FieldCondition(key="active", match=models.MatchValue(value=True))]
     )
