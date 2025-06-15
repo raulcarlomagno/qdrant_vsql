@@ -96,6 +96,20 @@ def test_and_gt_bool():
                 ]
             ),
         ),
+        (
+            "event_date NOT BETWEEN '2023-01-01T00:00:00' AND '2023-12-31T23:59:59'",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(
+                        key="event_date",
+                        range=models.DatetimeRange(
+                            gte=datetime.fromisoformat("2023-01-01T00:00:00"),
+                            lte=datetime.fromisoformat("2023-12-31T23:59:59"),
+                        ),
+                    )
+                ]
+            ),
+        ),
     ],
 )
 def test_and_datetime_range(query, expected_filter):
