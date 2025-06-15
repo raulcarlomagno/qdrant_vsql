@@ -23,8 +23,14 @@ def test_in_or_range():
     assert result == expected
 
 
-def test_and_not_equal():
-    query = "city = 'London' AND color != 'red'"
+@pytest.mark.parametrize(
+    "query",
+    [
+        "city = 'London' AND color <> 'red'",
+        "city = 'London' AND color != 'red'",
+    ],
+)
+def test_and_not_equal_both_operators(query):
     result = parse_where_to_filter(query)
     expected = models.Filter(
         must=[
@@ -41,7 +47,6 @@ def test_and_not_equal():
         ],
     )
     assert result == expected
-
 
 
 
