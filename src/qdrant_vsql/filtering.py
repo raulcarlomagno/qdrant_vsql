@@ -7,7 +7,6 @@ from qdrant_client.http import models
 
 # Define the grammar for the SQL-like WHERE clause using Parsimonious PEG format.
 # This grammar defines the structure of valid queries.
-# Updated to be more specific and less ambiguous.
 qdrant_filter_grammar = Grammar(
     r"""
     # Entry rule for the entire expression
@@ -27,7 +26,6 @@ qdrant_filter_grammar = Grammar(
     is_null_condition = identifier ws IS ws NOT? ws NULL
     is_empty_condition = identifier ws IS ws EMPTY
     is_empty_array_condition = identifier ws equals ws "[]"
-    # has_id_condition now explicitly matches the 'id' keyword
     has_id_condition = "id" ws (equals / in_op) ws value
     values_count_condition = COUNT "(" ws identifier ws ")" ws values_count_op
     values_count_op = (gte ws number) / (lte ws number) / (gt ws number) / (lt ws number) / (equals ws number) / (between_op ws number ws AND ws number)
