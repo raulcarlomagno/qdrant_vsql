@@ -576,6 +576,175 @@ def test_nested_and_or_not():
     assert result == expected
 
 
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "email is null",
+            models.Filter(
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+            ),
+        ),
+        (
+            "EMAIL IS NOT NULL",
+            models.Filter(
+                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="EMAIL"))]
+            ),
+        ),
+        (
+            "phone Is Null",
+            models.Filter(
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="phone"))]
+            ),
+        ),
+        (
+            "PHONE is Not nUlL",
+            models.Filter(
+                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="PHONE"))]
+            ),
+        ),
+    ],
+)
+def test_case_insensitive_null_conditions(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "active = true",
+            models.Filter(
+                must=[models.FieldCondition(key="active", match=models.MatchValue(value=True))]
+            ),
+        ),
+        (
+            "active = FALSE",
+            models.Filter(
+                must=[models.FieldCondition(key="active", match=models.MatchValue(value=False))]
+            ),
+        ),
+        (
+            "verified = True",
+            models.Filter(
+                must=[models.FieldCondition(key="verified", match=models.MatchValue(value=True))]
+            ),
+        ),
+        (
+            "verified = false",
+            models.Filter(
+                must=[models.FieldCondition(key="verified", match=models.MatchValue(value=False))]
+            ),
+        ),
+    ],
+)
+def test_case_insensitive_boolean_conditions(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "color in ('red','black') or age >= 17",
+            models.Filter(
+                should=[
+                    models.FieldCondition(
+                        key="color",
+                        match=models.MatchAny(any=["red", "black"]),
+                    ),
+                    models.FieldCondition(
+                        key="age",
+                        range=models.Range(gte=17),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "city = 'London' and color <> 'red'",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="city",
+                        match=models.MatchValue(value="London"),
+                    ),
+                ],
+                must_not=[
+                    models.FieldCondition(
+                        key="color",
+                        match=models.MatchValue(value="red"),
+                    ),
+                ],
+            ),
+        ),
+        (
+            "status NOT IN ('pending', 'approved')",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(
+                        key="status", match=models.MatchAny(any=["pending", "approved"])
+                    )
+                ]
+            ),
+        ),
+        (
+            "price between 10 and 100",
+            models.Filter(
+                must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=100))]
+            ),
+        ),
+        (
+            "discount NOT BETWEEN 0 AND 0.5",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(key="discount", range=models.Range(gte=0, lte=0.5))
+                ]
+            ),
+        ),
+        (
+            "name like 'Jo%hn%'",
+            models.Filter(
+                must=[models.FieldCondition(key="name", match=models.MatchText(text="Jo%hn%"))]
+            ),
+        ),
+        (
+            "COUNT(tags) between 2 and 5",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="tags", values_count=models.ValuesCount(gte=2, lte=5)
+                    )
+                ]
+            ),
+        ),
+        (
+            "NOT (score < 50 or attempts > 5)",
+            models.Filter(
+                must_not=[
+                    models.Filter(
+                        should=[
+                            models.FieldCondition(key="score", range=models.Range(lt=50)),
+                            models.FieldCondition(key="attempts", range=models.Range(gt=5)),
+                        ]
+                    )
+                ]
+            ),
+        ),
+        (
+            "tags is empty",
+            models.Filter(
+                must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
+            ),
+        ),
+    ],
+)
+def test_case_insensitive_keyword_combinations(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
 # --- NESTED FIELD AND NESTED OBJECT FILTER TESTS ---
 def test_dot_notation_nested_field():
     query = "country.name = 'Germany'"

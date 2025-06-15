@@ -230,9 +230,11 @@ class QdrantFilterVisitor(NodeVisitor):
         if not isinstance(op_details, list):
             op_details = [op_details]
         op_text: Any = op_details[0]
-        # Normalize op_text to a string for all cases
+        # Normalize op_text to a string for all cases and convert to uppercase for handler lookup
         if isinstance(op_text, list):
-            op_text = " ".join(str(x) for x in op_text)
+            op_text = " ".join(str(x) for x in op_text).upper()
+        else:
+            op_text = str(op_text).upper()
         value: Any = op_details[1] if len(op_details) > 1 else None
 
         def create_field_condition(key: str, **kwargs: Any) -> models.FieldCondition:
@@ -382,7 +384,7 @@ class QdrantFilterVisitor(NodeVisitor):
         )
         if not isinstance(op_details, list):
             op_details = [op_details]
-        op_text = op_details[0]
+        op_text = str(op_details[0]).upper() # Convert to uppercase for handler lookup
         count_kwargs = {}
         if op_text == "BETWEEN":
             val1 = op_details[1]
