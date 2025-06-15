@@ -1,8 +1,7 @@
 import pytest
 from qdrant_client.http import models
 from src.qdrant_vsql.filtering import parse_where_to_filter
-import datetime
-import re
+from datetime import datetime
 import uuid
 
 
@@ -61,8 +60,8 @@ def test_and_gt_bool():
 
 
 def test_and_datetime_range():
-    dt_gte_val = datetime.datetime.fromisoformat("2023-01-01T00:00:00")
-    dt_lt_val = datetime.datetime.fromisoformat("2024-01-01T00:00:00")
+    dt_gte_val = datetime.fromisoformat("2023-01-01T00:00:00")
+    dt_lt_val = datetime.fromisoformat("2024-01-01T00:00:00")
     query = f"created_at >= '{dt_gte_val.isoformat()}' AND created_at < '{dt_lt_val.isoformat()}'"
     result = parse_where_to_filter(query)
     expected = models.Filter(
@@ -312,7 +311,7 @@ def test_and_float_bool():
 
 
 def test_and_isnotnull_and_lt():
-    dt_lt_val = datetime.datetime.fromisoformat("2025-04-01T12:00:00")
+    dt_lt_val = datetime.fromisoformat("2025-04-01T12:00:00")
     query = f"last_login IS NOT NULL AND last_login < '{dt_lt_val.isoformat()}'"
     result = parse_where_to_filter(query)
     expected = models.Filter(

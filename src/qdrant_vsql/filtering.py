@@ -1,6 +1,5 @@
-import datetime
+from datetime import datetime
 from typing import Any, Union, Optional, List, Dict, Tuple, cast
-
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 from qdrant_client.http import models
@@ -275,7 +274,7 @@ class QdrantFilterVisitor(NodeVisitor):
 
             if isinstance(val, str):
                 try:
-                    datetime.datetime.fromisoformat(val.replace("Z", "+00:00"))
+                    datetime.fromisoformat(val.replace("Z", "+00:00"))
                     cond = create_field_condition(identifier, range=models.DatetimeRange(**range_kwargs))
                     return models.Filter(must=[cond])
                 except (ValueError, TypeError):
