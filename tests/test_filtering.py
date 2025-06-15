@@ -3,6 +3,7 @@ from qdrant_client.http import models
 from src.qdrant_vsql.filtering import parse_where_to_filter
 import datetime
 import re
+import uuid
 
 
 def test_in_or_range():
@@ -43,27 +44,8 @@ def test_and_not_equal():
     assert result == expected
 
 
-def test_like():
-    query = "name LIKE 'Jo%hn%'"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="name",
-                match=models.MatchText(text="Jo%hn%"),
-            ),
-        ]
-    )
-    assert result == expected
 
 
-def test_simple_equal():
-    query = "age = 30"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.FieldCondition(key="age", match=models.MatchValue(value=30))]
-    )
-    assert result == expected
 
 
 def test_and_gt_bool():
@@ -98,82 +80,117 @@ def test_and_datetime_range():
     assert result == expected
 
 
-def test_in_list():
-    query = "status IN ('pending', 'approved', 'rejected')"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "status IN ('pending', 'approved', 'rejected')",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="status",
+                        match=models.MatchAny(any=["pending", "approved", "rejected"]),
+                    )
+                ]
+            ),
+        ),
+        (
+            "category NOT IN ('electronics','furniture')",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(
+                        key="category", match=models.MatchAny(any=["electronics", "furniture"])
+                    )
+                ]
+            ),
+        ),
+    ],
+)
+def test_in_list_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="status",
-                match=models.MatchAny(any=["pending", "approved", "rejected"]),
-            )
-        ]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
-def test_not_in_list():
-    query = "category NOT IN ('electronics','furniture')"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "price BETWEEN 10 AND 100",
+            models.Filter(
+                must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=100))]
+            ),
+        ),
+        (
+            "discount NOT BETWEEN 0 AND 0.5",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(key="discount", range=models.Range(gte=0, lte=0.5))
+                ]
+            ),
+        ),
+    ],
+)
+def test_between_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[
-            models.FieldCondition(
-                key="category", match=models.MatchAny(any=["electronics", "furniture"])
-            )
-        ]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
-def test_between():
-    query = "price BETWEEN 10 AND 100"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "age = 30",
+            models.Filter(
+                must=[models.FieldCondition(key="age", match=models.MatchValue(value=30))]
+            ),
+        ),
+        (
+            "description = 'A simple text'",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="description", match=models.MatchValue(value="A simple text")
+                    )
+                ]
+            ),
+        ),
+        (
+            "uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="uuid", match=models.MatchValue(value="f47ac10b-58cc-4372-a567-0e02b2c3d479")
+                    )
+                ]
+            ),
+        ),
+    ],
+)
+def test_simple_equality_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=100))]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
-def test_not_between():
-    query = "discount NOT BETWEEN 0 AND 0.5"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "email IS NULL",
+            models.Filter(
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+            ),
+        ),
+        (
+            "phone IS NOT NULL",
+            models.Filter(
+                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="phone"))]
+            ),
+        ),
+    ],
+)
+def test_null_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[
-            models.FieldCondition(key="discount", range=models.Range(gte=0, lte=0.5))
-        ]
-    )
-    assert result == expected
-
-
-def test_simple_string():
-    query = "description = 'A simple text'"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="description", match=models.MatchValue(value="A simple text")
-            )
-        ]
-    )
-    assert result == expected
-
-
-def test_is_null():
-    query = "email IS NULL"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
-    )
-    assert result == expected
-
-
-def test_is_not_null():
-    query = "phone IS NOT NULL"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[models.IsNullCondition(is_null=models.PayloadField(key="phone"))]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
 def test_or_and_bool():
@@ -197,42 +214,32 @@ def test_or_and_bool():
     assert result == expected
 
 
-def test_not_or():
-    query = "NOT (score < 50 OR attempts > 5)"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "COUNT(tags) >= 3",
             models.Filter(
-                should=[
-                    models.FieldCondition(key="score", range=models.Range(lt=50)),
-                    models.FieldCondition(key="attempts", range=models.Range(gt=5)),
+                must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
+            ),
+        ),
+        (
+            "COUNT(comments) BETWEEN 5 AND 20",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="comments", values_count=models.ValuesCount(gte=5, lte=20)
+                    )
                 ]
-            )
-        ]
-    )
-    assert result == expected
-
-
-def test_count_gte():
-    query = "COUNT(tags) >= 3"
+            ),
+        ),
+    ],
+)
+def test_count_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
-    )
-    assert result == expected
-
-
-def test_count_between():
-    query = "COUNT(comments) BETWEEN 5 AND 20"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="comments", values_count=models.ValuesCount(gte=5, lte=20)
-            )
-        ]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
 def test_nested_field():
@@ -338,17 +345,6 @@ def test_empty_array():
         must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="attachments"))]
     )
     assert result == expected
-def test_not_in_match_except():
-    query = "color NOT IN ('red', 'blue')"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[
-            models.FieldCondition(
-                key="color", match=models.MatchAny(any=["red", "blue"])
-            )
-        ]
-    )
-    assert result == expected
 
 
 def test_nested_array_projection():
@@ -367,131 +363,189 @@ def test_nested_array_projection():
     assert result == expected
 
 
-def test_id_equality():
-    query = "id = 123"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "id = 123",
+            models.Filter(must=[models.HasIdCondition(has_id=[123])]),
+        ),
+        (
+            "id IN (1, 2, 3)",
+            models.Filter(must=[models.HasIdCondition(has_id=[1, 2, 3])]),
+        ),
+        (
+            f"id = '{uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479')}'", # hyphenated
+            models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479'))])]),
+        ),
+        (
+            f"id = '{uuid.UUID('936DA01F9ABD4d9d80C702AF85C822A8')}'", # simple
+            models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('936DA01F9ABD4d9d80C702AF85C822A8'))])]),
+        ),
+        (
+            f"id IN ('{uuid.UUID('550e8400-e29b-41d4-a716-446655440000')}', '{uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4')}')", # hyphenated and URN
+            models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('550e8400-e29b-41d4-a716-446655440000')), str(uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4'))])]),
+        ),
+    ],
+)
+def test_id_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(must=[models.HasIdCondition(has_id=[123])])
-    assert result == expected
+    assert result == expected_filter
 
 
-def test_id_in():
-    query = "id IN (1, 2, 3)"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(must=[models.HasIdCondition(has_id=[1, 2, 3])])
-    assert result == expected
-
-
-def test_is_empty():
-    query = "tags IS EMPTY"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
-    )
-    assert result == expected
-
-
-def test_equals_empty_array():
-    query = "tags = []"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
-    )
-    assert result == expected
-
-
-def test_like_vs_equals_string():
-    query = "name LIKE 'Jo%hn%'"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.FieldCondition(key="name", match=models.MatchText(text="Jo%hn%"))]
-    )
-    assert result == expected
-
-    query2 = "name = 'John'"
-    result2 = parse_where_to_filter(query2)
-    expected2 = models.Filter(
-        must=[models.FieldCondition(key="name", match=models.MatchValue(value="John"))]
-    )
-    assert result2 == expected2
-
-
-def test_between_and_not_between():
-    query = "price BETWEEN 10 AND 20"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=20))]
-    )
-    assert result == expected
-
-    query2 = "price NOT BETWEEN 10 AND 20"
-    result2 = parse_where_to_filter(query2)
-    expected2 = models.Filter(
-        must_not=[
-            models.FieldCondition(key="price", range=models.Range(gte=10, lte=20))
-        ]
-    )
-    assert result2 == expected2
-
-
-def test_count_and_count_between():
-    query = "COUNT(tags) >= 3"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
-    )
-    assert result == expected
-
-    query2 = "COUNT(tags) BETWEEN 2 AND 5"
-    result2 = parse_where_to_filter(query2)
-    expected2 = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="tags", values_count=models.ValuesCount(gte=2, lte=5)
-            )
-        ]
-    )
-    assert result2 == expected2
-
-
-def test_complex_nested_logic():
-    query = "NOT (score < 50 OR attempts > 5)"
-    result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "tags IS EMPTY",
             models.Filter(
-                should=[
-                    models.FieldCondition(key="score", range=models.Range(lt=50)),
-                    models.FieldCondition(key="attempts", range=models.Range(gt=5)),
+                must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
+            ),
+        ),
+        (
+            "tags = []",
+            models.Filter(
+                must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
+            ),
+        ),
+    ],
+)
+def test_empty_conditions(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "name LIKE 'Jo%hn%'",
+            models.Filter(
+                must=[models.FieldCondition(key="name", match=models.MatchText(text="Jo%hn%"))]
+            ),
+        ),
+        (
+            "name = 'John'",
+            models.Filter(
+                must=[models.FieldCondition(key="name", match=models.MatchValue(value="John"))]
+            ),
+        ),
+    ],
+)
+def test_string_match_conditions(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "price BETWEEN 10 AND 20",
+            models.Filter(
+                must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=20))]
+            ),
+        ),
+        (
+            "price NOT BETWEEN 10 AND 20",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(key="price", range=models.Range(gte=10, lte=20))
                 ]
-            )
-        ]
-    )
-    assert result == expected
-
-
-def test_not_in_empty_list():
-    query = "color NOT IN ()"
+            ),
+        ),
+        (
+            "COUNT(tags) >= 3",
+            models.Filter(
+                must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
+            ),
+        ),
+        (
+            "COUNT(tags) BETWEEN 2 AND 5",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="tags", values_count=models.ValuesCount(gte=2, lte=5)
+                    )
+                ]
+            ),
+        ),
+    ],
+)
+def test_range_and_count_conditions(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must_not=[models.FieldCondition(key="color", match=models.MatchAny(any=[]))]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
-def test_is_null_and_is_not_null():
-    query = "email IS NULL"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "NOT (score < 50 OR attempts > 5)",
+            models.Filter(
+                must_not=[
+                    models.Filter(
+                        should=[
+                            models.FieldCondition(key="score", range=models.Range(lt=50)),
+                            models.FieldCondition(key="attempts", range=models.Range(gt=5)),
+                        ]
+                    )
+                ]
+            ),
+        ),
+    ],
+)
+def test_complex_negation_logic(query, expected_filter):
     result = parse_where_to_filter(query)
-    expected = models.Filter(
-        must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
-    )
-    assert result == expected
+    assert result == expected_filter
 
-    query2 = "email IS NOT NULL"
-    result2 = parse_where_to_filter(query2)
-    expected2 = models.Filter(
-        must_not=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
-    )
-    assert result2 == expected2
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "color NOT IN ('red', 'blue')",
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(
+                        key="color", match=models.MatchAny(any=["red", "blue"])
+                    )
+                ]
+            ),
+        ),
+        (
+            "color NOT IN ()",
+            models.Filter(
+                must_not=[models.FieldCondition(key="color", match=models.MatchAny(any=[]))]
+            ),
+        ),
+    ],
+)
+def test_not_in_conditions(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "email IS NULL",
+            models.Filter(
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+            ),
+        ),
+        (
+            "email IS NOT NULL",
+            models.Filter(
+                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+            ),
+        ),
+    ],
+)
+def test_is_null_and_not_null_conditions(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
 
 
 def test_nested_and_or_not():
@@ -543,19 +597,3 @@ def test_array_projection_nested():
         ]
     )
     assert result == expected
-
-
-# Helper to convert query to a valid function name
-
-
-def query_to_func_name(query):
-    # Remove quotes, parentheses, and replace non-alphanum with underscores
-    name = re.sub(r"[\(\)\[\]']", "", query)
-    name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
-    name = name.strip("_")
-    return f"test_{name.lower()}"
-
-
-# For each test, rename the function to use the query string as the function name
-
-
