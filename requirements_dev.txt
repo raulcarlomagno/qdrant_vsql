@@ -1,0 +1,4 @@
+parsimonious==0.10.0
+qdrant-client==1.14.2
+pytest==8.3.5
+ruff==0.11.6
