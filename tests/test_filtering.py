@@ -770,3 +770,43 @@ def test_array_projection_nested():
         ]
     )
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "message = 'It\\'s a test with a backslash \\\\ and another quote \\''",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="message",
+                        match=models.MatchValue(value="It's a test with a backslash \\ and another quote '"),
+                    )
+                ]
+            ),
+        ),
+        (
+            "path = 'C:\\\\Users\\\\file.txt'",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="path", match=models.MatchValue(value="C:\\Users\\file.txt")
+                    )
+                ]
+            ),
+        ),
+    ],
+)
+def test_escaped_string_values(query, expected_filter):
+    result = parse_where_to_filter(query)
+    assert result == expected_filter
+
+
+def test_not_single_condition():
+    query = "NOT active = TRUE"
+    result = parse_where_to_filter(query)
+    expected = models.Filter(
+        must_not=[models.FieldCondition(key="active", match=models.MatchValue(value=True))]
+    )
+    assert result == expected

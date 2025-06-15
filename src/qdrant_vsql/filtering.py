@@ -50,7 +50,7 @@ qdrant_filter_grammar = Grammar(
 
     # Allow empty list for IN/NOT IN
     list_value = "(" ws (value (ws "," ws value)*)? ws ")"
-    string = ~r"'(?:[^'\\\\]|\\\\.)*'"
+    string = ~r"'(?:[^'\\]|\\['\\])*'"
     number = ~r"-?\d+(?:\.\d+)?"
     boolean = TRUE / FALSE
     date_string = ~r"'\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z?)?'"
@@ -460,7 +460,7 @@ class QdrantFilterVisitor(NodeVisitor):
 
     def visit_string(self, _node: Node, _visited_children: Any) -> str:
         """Extract string value, unquoting and unescaping as needed."""
-        return _node.text[1:-1].replace("\\'", "'")
+        return _node.text[1:-1].replace("\\'", "'").replace("\\\\", "\\")
 
     def visit_number(self, _node: Node, _visited_children: Any) -> Union[int, float]:
         """Extract number value as int or float."""
