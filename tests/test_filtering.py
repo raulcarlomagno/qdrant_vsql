@@ -64,24 +64,43 @@ def test_and_gt_bool():
     assert result == expected
 
 
-def test_and_datetime_range():
-    dt_gte_val = datetime.fromisoformat("2023-01-01T00:00:00")
-    dt_lt_val = datetime.fromisoformat("2024-01-01T00:00:00")
-    query = f"created_at >= '{dt_gte_val.isoformat()}' AND created_at < '{dt_lt_val.isoformat()}'"
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
+        (
+            "created_at >= '2023-01-01T00:00:00' AND created_at < '2024-01-01T00:00:00'",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="created_at",
+                        range=models.DatetimeRange(gte=datetime.fromisoformat("2023-01-01T00:00:00")),
+                    ),
+                    models.FieldCondition(
+                        key="created_at",
+                        range=models.DatetimeRange(lt=datetime.fromisoformat("2024-01-01T00:00:00")),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "event_date BETWEEN '2023-01-01T00:00:00' AND '2023-12-31T23:59:59'",
+            models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="event_date",
+                        range=models.DatetimeRange(
+                            gte=datetime.fromisoformat("2023-01-01T00:00:00"),
+                            lte=datetime.fromisoformat("2023-12-31T23:59:59"),
+                        ),
+                    )
+                ]
+            ),
+        ),
+    ],
+)
+def test_and_datetime_range(query, expected_filter):
     result = where2filter(query)
-    expected = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="created_at",
-                range=models.DatetimeRange(gte=dt_gte_val),
-            ),
-            models.FieldCondition(
-                key="created_at",
-                range=models.DatetimeRange(lt=dt_lt_val),
-            ),
-        ]
-    )
-    assert result == expected
+    assert result == expected_filter
 
 
 @pytest.mark.parametrize(

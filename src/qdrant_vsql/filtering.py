@@ -239,7 +239,16 @@ class QdrantFilterVisitor(NodeVisitor):
             return models.FieldCondition(key=key, **kwargs)
 
         def handle_between(val1: Any, val2: Any, is_not: bool = False) -> models.Filter:
-            cond = create_field_condition(identifier, range=models.Range(gte=val1, lte=val2))
+            range_kwargs = {"gte": val1, "lte": val2}
+            if isinstance(val1, str) and isinstance(val2, str):
+                try:
+                    datetime.fromisoformat(val1.replace("Z", "+00:00"))
+                    datetime.fromisoformat(val2.replace("Z", "+00:00"))
+                    cond = create_field_condition(identifier, range=models.DatetimeRange(**range_kwargs))
+                    return models.Filter(must_not=[cond]) if is_not else models.Filter(must=[cond])
+                except (ValueError, TypeError):
+                    pass
+            cond = create_field_condition(identifier, range=models.Range(**range_kwargs))
             return models.Filter(must_not=[cond]) if is_not else models.Filter(must=[cond])
 
         def handle_equality(val: Any, is_not: bool = False) -> models.Filter:
