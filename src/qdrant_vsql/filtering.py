@@ -172,16 +172,12 @@ class QdrantFilterVisitor(NodeVisitor):
                 f = _unwrap_group(f)
                 out: List[Any] = []
                 if isinstance(f, models.Filter):
-                    # Preserve AND group as a group inside should
-                    if f.must and not f.should and not f.must_not:
-                        out.append(f)
+                    # If it's an OR filter already, flatten its shoulds
+                    if f.should and not f.must and not f.must_not:
+                        out.extend(ensure_list(f.should))
+                    # Otherwise, add the whole filter
                     else:
-                        if f.must:
-                            out.extend(ensure_list(f.must))
-                        if f.should:
-                            out.extend(ensure_list(f.should))
-                        if f.must_not:
-                            out.extend(ensure_list(f.must_not))
+                        out.append(f)
                 elif f is not None:
                     out.append(f)
                 return out
@@ -229,42 +225,17 @@ class QdrantFilterVisitor(NodeVisitor):
         not_part: Any = visited_children[0]
         term: Any = _unwrap_group(visited_children[1])
 
-        def as_list(val: Any) -> List[Any]:
-            if val is None:
-                return []
-            if isinstance(val, list):
-                return [x for x in val if x is not None]
-            return [val]
-
         if not_part:  # Only apply NOT logic if not_part is not empty
-            if isinstance(term, models.Filter):
-                has_must: bool = bool(term.must)
-                has_must_not: bool = bool(term.must_not)
-                has_should: bool = bool(term.should)
-                # NOT of a Filter with only must
-                if has_must and not has_must_not and not has_should:
-                    must: List[Any] = as_list(term.must)
-                    result: models.Filter = models.Filter(must_not=must or None)
-                    return result
-                # Double negation: NOT of a Filter with only must_not
-                if has_must_not and not has_must and not has_should:
-                    must_not: List[Any] = as_list(term.must_not)
-                    result: models.Filter = models.Filter(must=must_not or None)
-                    return result
-                # NOT of a Filter with should (OR group): wrap as must_not
-                if has_should and not has_must and not has_must_not:
-                    should: List[Any] = as_list(term.should)
-                    result: models.Filter = models.Filter(
-                        must_not=[models.Filter(should=should or None)],
-                    )
-                    return result
-                # Otherwise, wrap the entire filter in must_not
-                result: models.Filter = models.Filter(must_not=[term])
-                return result
-            # For atomic conditions, wrap in must_not
-            must_not_list: List[Any] = [term] if term is not None else []
-            result: models.Filter = models.Filter(must_not=must_not_list or None)
-            return result
+            if not isinstance(term, models.Filter):
+                return models.Filter(must_not=[term] if term is not None else None)
+
+            # Handle double negation: NOT (must_not [...]) -> must [...]
+            if term.must_not and not term.must and not term.should:
+                return models.Filter(must=term.must_not)
+
+            # For all other filters, wrap them in must_not
+            return models.Filter(must_not=[term])
+
         # If NOT is not present, just return the term as-is
         return term
 
