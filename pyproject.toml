@@ -36,8 +36,15 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+
+[tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D203", "D213"]
+ignore = ["D203", "D213", "COM812", "C901", "PLR0912", "PLR0915", "ANN401", "S101", "PT006", "D103", "ANN201", "ANN001", "D104", "D100", "D102", "ARG002"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
 
 [tool.setuptools_scm]
 write_to = "src/qdrant_vsql/_version.py"

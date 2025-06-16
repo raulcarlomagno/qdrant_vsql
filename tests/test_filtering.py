@@ -1,8 +1,10 @@
+import uuid
+from datetime import datetime
+
 import pytest
 from qdrant_client.http import models
+
 from src.qdrant_vsql.filtering import where2filter
-from datetime import datetime
-import uuid
 
 
 def test_in_or_range():
@@ -18,7 +20,7 @@ def test_in_or_range():
                 key="age",
                 range=models.Range(gte=17),
             ),
-        ]
+        ],
     )
     assert result == expected
 
@@ -49,9 +51,6 @@ def test_and_not_equal_both_operators(query):
     assert result == expected
 
 
-
-
-
 def test_and_gt_bool():
     query = "salary > 50000 AND active = TRUE"
     result = where2filter(query)
@@ -59,7 +58,7 @@ def test_and_gt_bool():
         must=[
             models.FieldCondition(key="salary", range=models.Range(gt=50000)),
             models.FieldCondition(key="active", match=models.MatchValue(value=True)),
-        ]
+        ],
     )
     assert result == expected
 
@@ -73,13 +72,17 @@ def test_and_gt_bool():
                 must=[
                     models.FieldCondition(
                         key="created_at",
-                        range=models.DatetimeRange(gte=datetime.fromisoformat("2023-01-01T00:00:00")),
+                        range=models.DatetimeRange(
+                            gte=datetime.fromisoformat("2023-01-01T00:00:00"),
+                        ),
                     ),
                     models.FieldCondition(
                         key="created_at",
-                        range=models.DatetimeRange(lt=datetime.fromisoformat("2024-01-01T00:00:00")),
+                        range=models.DatetimeRange(
+                            lt=datetime.fromisoformat("2024-01-01T00:00:00"),
+                        ),
                     ),
-                ]
+                ],
             ),
         ),
         (
@@ -92,8 +95,8 @@ def test_and_gt_bool():
                             gte=datetime.fromisoformat("2023-01-01T00:00:00"),
                             lte=datetime.fromisoformat("2023-12-31T23:59:59"),
                         ),
-                    )
-                ]
+                    ),
+                ],
             ),
         ),
         (
@@ -106,8 +109,8 @@ def test_and_gt_bool():
                             gte=datetime.fromisoformat("2023-01-01T00:00:00"),
                             lte=datetime.fromisoformat("2023-12-31T23:59:59"),
                         ),
-                    )
-                ]
+                    ),
+                ],
             ),
         ),
     ],
@@ -127,8 +130,8 @@ def test_and_datetime_range(query, expected_filter):
                     models.FieldCondition(
                         key="status",
                         match=models.MatchAny(any=["pending", "approved", "rejected"]),
-                    )
-                ]
+                    ),
+                ],
             ),
         ),
         (
@@ -136,9 +139,12 @@ def test_and_datetime_range(query, expected_filter):
             models.Filter(
                 must=[
                     models.FieldCondition(
-                        key="category", match=models.MatchExcept(**{"except":["electronics", "furniture"]})
-                    )
-                ]
+                        key="category",
+                        match=models.MatchExcept(
+                            **{"except": ["electronics", "furniture"]},
+                        ),
+                    ),
+                ],
             ),
         ),
     ],
@@ -154,7 +160,9 @@ def test_in_list_conditions(query, expected_filter):
         (
             "age = 30",
             models.Filter(
-                must=[models.FieldCondition(key="age", match=models.MatchValue(value=30))]
+                must=[
+                    models.FieldCondition(key="age", match=models.MatchValue(value=30)),
+                ],
             ),
         ),
         (
@@ -162,11 +170,12 @@ def test_in_list_conditions(query, expected_filter):
             models.Filter(
                 must=[
                     models.FieldCondition(
-                        key="description", match=models.MatchValue(value="A simple text")
-                    )
-                ]
+                        key="description",
+                        match=models.MatchValue(value="A simple text"),
+                    ),
+                ],
             ),
-        )
+        ),
     ],
 )
 def test_simple_equality_conditions(query, expected_filter):
@@ -182,19 +191,19 @@ def test_or_and_bool():
             models.Filter(
                 should=[
                     models.FieldCondition(
-                        key="country", match=models.MatchValue(value="US")
+                        key="country",
+                        match=models.MatchValue(value="US"),
                     ),
                     models.FieldCondition(
-                        key="country", match=models.MatchValue(value="CA")
+                        key="country",
+                        match=models.MatchValue(value="CA"),
                     ),
-                ]
+                ],
             ),
             models.FieldCondition(key="verified", match=models.MatchValue(value=False)),
-        ]
+        ],
     )
     assert result == expected
-
-
 
 
 def test_nested_field():
@@ -203,9 +212,10 @@ def test_nested_field():
     expected = models.Filter(
         must=[
             models.FieldCondition(
-                key="user.address.city", match=models.MatchValue(value="London")
-            )
-        ]
+                key="user.address.city",
+                match=models.MatchValue(value="London"),
+            ),
+        ],
     )
     assert result == expected
 
@@ -216,9 +226,10 @@ def test_array_in():
     expected = models.Filter(
         must=[
             models.FieldCondition(
-                key="metadata.tags", match=models.MatchAny(any=["urgent", "todo"])
-            )
-        ]
+                key="metadata.tags",
+                match=models.MatchAny(any=["urgent", "todo"]),
+            ),
+        ],
     )
     assert result == expected
 
@@ -233,23 +244,27 @@ def test_complex_combined():
                     models.Filter(
                         must=[
                             models.FieldCondition(
-                                key="status", match=models.MatchValue(value="live")
+                                key="status",
+                                match=models.MatchValue(value="live"),
                             ),
                             models.FieldCondition(
-                                key="views", range=models.Range(gt=1000)
+                                key="views",
+                                range=models.Range(gt=1000),
                             ),
-                        ]
+                        ],
                     ),
                     models.FieldCondition(
-                        key="priority", match=models.MatchAny(any=["high", "urgent"])
+                        key="priority",
+                        match=models.MatchAny(any=["high", "urgent"]),
                     ),
-                ]
+                ],
             ),
             models.FieldCondition(key="archived", match=models.MatchValue(value=False)),
             models.FieldCondition(
-                key="comments_count", range=models.Range(gte=1, lte=10)
+                key="comments_count",
+                range=models.Range(gte=1, lte=10),
             ),
-        ]
+        ],
     )
     assert result == expected
 
@@ -261,7 +276,7 @@ def test_and_float_bool():
         must=[
             models.FieldCondition(key="rating", range=models.Range(gte=4.5)),
             models.FieldCondition(key="published", match=models.MatchValue(value=True)),
-        ]
+        ],
     )
     assert result == expected
 
@@ -278,7 +293,7 @@ def test_and_isnotnull_and_lt():
             ),
         ],
         must_not=[
-            models.IsNullCondition(is_null=models.PayloadField(key="last_login"))
+            models.IsNullCondition(is_null=models.PayloadField(key="last_login")),
         ],
     )
     assert result == expected
@@ -288,7 +303,7 @@ def test_empty_string():
     query = "notes = ''"
     result = where2filter(query)
     expected = models.Filter(
-        must=[models.FieldCondition(key="notes", match=models.MatchValue(value=""))]
+        must=[models.FieldCondition(key="notes", match=models.MatchValue(value=""))],
     )
     assert result == expected
 
@@ -299,12 +314,14 @@ def test_nested_array_projection():
     expected = models.Filter(
         must=[
             models.FieldCondition(
-                key="diet[].food", match=models.MatchValue(value="meat")
+                key="diet[].food",
+                match=models.MatchValue(value="meat"),
             ),
             models.FieldCondition(
-                key="diet[].likes", match=models.MatchValue(value=True)
+                key="diet[].likes",
+                match=models.MatchValue(value=True),
             ),
-        ]
+        ],
     )
     assert result == expected
 
@@ -321,16 +338,37 @@ def test_nested_array_projection():
             models.Filter(must=[models.HasIdCondition(has_id=[1, 2, 3])]),
         ),
         (
-            f"id = '{uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479')}'", # hyphenated
-            models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479'))])]),
+            f"id = '{uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479')}'",  # hyphenated
+            models.Filter(
+                must=[
+                    models.HasIdCondition(
+                        has_id=[str(uuid.UUID("f47ac10b-58cc-4372-a567-0e02b2c3d479"))],
+                    ),
+                ],
+            ),
         ),
         (
-            f"id = '{uuid.UUID('936DA01F9ABD4d9d80C702AF85C822A8')}'", # simple
-            models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('936DA01F9ABD4d9d80C702AF85C822A8'))])]),
+            f"id = '{uuid.UUID('936DA01F9ABD4d9d80C702AF85C822A8')}'",  # simple
+            models.Filter(
+                must=[
+                    models.HasIdCondition(
+                        has_id=[str(uuid.UUID("936DA01F9ABD4d9d80C702AF85C822A8"))],
+                    ),
+                ],
+            ),
         ),
         (
-            f"id IN ('{uuid.UUID('550e8400-e29b-41d4-a716-446655440000')}', '{uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4')}')", # hyphenated and URN
-            models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('550e8400-e29b-41d4-a716-446655440000')), str(uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4'))])]),
+            f"id IN ('{uuid.UUID('550e8400-e29b-41d4-a716-446655440000')}', '{uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4')}')",  # hyphenated and URN
+            models.Filter(
+                must=[
+                    models.HasIdCondition(
+                        has_id=[
+                            str(uuid.UUID("550e8400-e29b-41d4-a716-446655440000")),
+                            str(uuid.UUID("f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4")),
+                        ],
+                    ),
+                ],
+            ),
         ),
         (
             "id != 123",
@@ -357,13 +395,17 @@ def test_id_conditions(query, expected_filter):
         (
             "tags IS EMPTY",
             models.Filter(
-                must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
+                must=[
+                    models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))
+                ],
             ),
         ),
         (
             "tags = []",
             models.Filter(
-                must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
+                must=[
+                    models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))
+                ],
             ),
         ),
     ],
@@ -379,13 +421,23 @@ def test_empty_conditions(query, expected_filter):
         (
             "name LIKE 'Jo%hn%'",
             models.Filter(
-                must=[models.FieldCondition(key="name", match=models.MatchText(text="Jo%hn%"))]
+                must=[
+                    models.FieldCondition(
+                        key="name",
+                        match=models.MatchText(text="Jo%hn%"),
+                    ),
+                ],
             ),
         ),
         (
             "name = 'John'",
             models.Filter(
-                must=[models.FieldCondition(key="name", match=models.MatchValue(value="John"))]
+                must=[
+                    models.FieldCondition(
+                        key="name",
+                        match=models.MatchValue(value="John"),
+                    ),
+                ],
             ),
         ),
     ],
@@ -401,15 +453,23 @@ def test_string_match_conditions(query, expected_filter):
         (
             "price BETWEEN 10 AND 20",
             models.Filter(
-                must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=20))]
+                must=[
+                    models.FieldCondition(
+                        key="price",
+                        range=models.Range(gte=10, lte=20),
+                    ),
+                ],
             ),
         ),
         (
             "price NOT BETWEEN 10 AND 20",
             models.Filter(
                 must_not=[
-                    models.FieldCondition(key="price", range=models.Range(gte=10, lte=20))
-                ]
+                    models.FieldCondition(
+                        key="price",
+                        range=models.Range(gte=10, lte=20),
+                    ),
+                ],
             ),
         ),
     ],
@@ -425,13 +485,23 @@ def test_range_conditions(query, expected_filter):
         (
             "COUNT(tags) >= 3",
             models.Filter(
-                must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
+                must=[
+                    models.FieldCondition(
+                        key="tags",
+                        values_count=models.ValuesCount(gte=3),
+                    ),
+                ],
             ),
         ),
         (
             "COUNT(members) < 2",
             models.Filter(
-                must=[models.FieldCondition(key="members", values_count=models.ValuesCount(lt=2))]
+                must=[
+                    models.FieldCondition(
+                        key="members",
+                        values_count=models.ValuesCount(lt=2),
+                    ),
+                ],
             ),
         ),
         (
@@ -439,9 +509,10 @@ def test_range_conditions(query, expected_filter):
             models.Filter(
                 must=[
                     models.FieldCondition(
-                        key="tags", values_count=models.ValuesCount(gte=2, lte=5)
-                    )
-                ]
+                        key="tags",
+                        values_count=models.ValuesCount(gte=2, lte=5),
+                    ),
+                ],
             ),
         ),
     ],
@@ -460,11 +531,17 @@ def test_count_conditions(query, expected_filter):
                 must_not=[
                     models.Filter(
                         should=[
-                            models.FieldCondition(key="score", range=models.Range(lt=50)),
-                            models.FieldCondition(key="attempts", range=models.Range(gt=5)),
-                        ]
-                    )
-                ]
+                            models.FieldCondition(
+                                key="score",
+                                range=models.Range(lt=50),
+                            ),
+                            models.FieldCondition(
+                                key="attempts",
+                                range=models.Range(gt=5),
+                            ),
+                        ],
+                    ),
+                ],
             ),
         ),
     ],
@@ -480,13 +557,15 @@ def test_complex_negation_logic(query, expected_filter):
         (
             "email IS NULL",
             models.Filter(
-                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))],
             ),
         ),
         (
             "email IS NOT NULL",
             models.Filter(
-                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+                must_not=[
+                    models.IsNullCondition(is_null=models.PayloadField(key="email")),
+                ],
             ),
         ),
     ],
@@ -505,16 +584,16 @@ def test_nested_and_or_not():
                 should=[
                     models.FieldCondition(key="a", match=models.MatchValue(value=1)),
                     models.FieldCondition(key="b", match=models.MatchValue(value=2)),
-                ]
-            )
+                ],
+            ),
         ],
         must_not=[
             models.Filter(
                 should=[
                     models.FieldCondition(key="c", match=models.MatchValue(value=3)),
                     models.FieldCondition(key="d", match=models.MatchValue(value=4)),
-                ]
-            )
+                ],
+            ),
         ],
     )
     assert result == expected
@@ -526,25 +605,29 @@ def test_nested_and_or_not():
         (
             "email is null",
             models.Filter(
-                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))],
             ),
         ),
         (
             "EMAIL IS NOT NULL",
             models.Filter(
-                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="EMAIL"))]
+                must_not=[
+                    models.IsNullCondition(is_null=models.PayloadField(key="EMAIL")),
+                ],
             ),
         ),
         (
             "phone Is Null",
             models.Filter(
-                must=[models.IsNullCondition(is_null=models.PayloadField(key="phone"))]
+                must=[models.IsNullCondition(is_null=models.PayloadField(key="phone"))],
             ),
         ),
         (
             "PHONE is Not nUlL",
             models.Filter(
-                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="PHONE"))]
+                must_not=[
+                    models.IsNullCondition(is_null=models.PayloadField(key="PHONE")),
+                ],
             ),
         ),
     ],
@@ -560,25 +643,45 @@ def test_case_insensitive_null_conditions(query, expected_filter):
         (
             "active = true",
             models.Filter(
-                must=[models.FieldCondition(key="active", match=models.MatchValue(value=True))]
+                must=[
+                    models.FieldCondition(
+                        key="active",
+                        match=models.MatchValue(value=True),
+                    ),
+                ],
             ),
         ),
         (
             "active = FALSE",
             models.Filter(
-                must=[models.FieldCondition(key="active", match=models.MatchValue(value=False))]
+                must=[
+                    models.FieldCondition(
+                        key="active",
+                        match=models.MatchValue(value=False),
+                    ),
+                ],
             ),
         ),
         (
             "verified = True",
             models.Filter(
-                must=[models.FieldCondition(key="verified", match=models.MatchValue(value=True))]
+                must=[
+                    models.FieldCondition(
+                        key="verified",
+                        match=models.MatchValue(value=True),
+                    ),
+                ],
             ),
         ),
         (
             "verified = false",
             models.Filter(
-                must=[models.FieldCondition(key="verified", match=models.MatchValue(value=False))]
+                must=[
+                    models.FieldCondition(
+                        key="verified",
+                        match=models.MatchValue(value=False),
+                    ),
+                ],
             ),
         ),
     ],
@@ -603,7 +706,7 @@ def test_case_insensitive_boolean_conditions(query, expected_filter):
                         key="age",
                         range=models.Range(gte=17),
                     ),
-                ]
+                ],
             ),
         ),
         (
@@ -628,29 +731,43 @@ def test_case_insensitive_boolean_conditions(query, expected_filter):
             models.Filter(
                 must=[
                     models.FieldCondition(
-                        key="status", match=models.MatchExcept(**{"except":["pending", "approved"]})
-                    )
-                ]
+                        key="status",
+                        match=models.MatchExcept(**{"except": ["pending", "approved"]}),
+                    ),
+                ],
             ),
         ),
         (
             "price between 10 and 100",
             models.Filter(
-                must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=100))]
+                must=[
+                    models.FieldCondition(
+                        key="price",
+                        range=models.Range(gte=10, lte=100),
+                    ),
+                ],
             ),
         ),
         (
             "discount NOT BETWEEN 0 AND 0.5",
             models.Filter(
                 must_not=[
-                    models.FieldCondition(key="discount", range=models.Range(gte=0, lte=0.5))
-                ]
+                    models.FieldCondition(
+                        key="discount",
+                        range=models.Range(gte=0, lte=0.5),
+                    ),
+                ],
             ),
         ),
         (
             "name like 'Jo%hn%'",
             models.Filter(
-                must=[models.FieldCondition(key="name", match=models.MatchText(text="Jo%hn%"))]
+                must=[
+                    models.FieldCondition(
+                        key="name",
+                        match=models.MatchText(text="Jo%hn%"),
+                    ),
+                ],
             ),
         ),
         (
@@ -658,9 +775,10 @@ def test_case_insensitive_boolean_conditions(query, expected_filter):
             models.Filter(
                 must=[
                     models.FieldCondition(
-                        key="tags", values_count=models.ValuesCount(gte=2, lte=5)
-                    )
-                ]
+                        key="tags",
+                        values_count=models.ValuesCount(gte=2, lte=5),
+                    ),
+                ],
             ),
         ),
         (
@@ -669,17 +787,25 @@ def test_case_insensitive_boolean_conditions(query, expected_filter):
                 must_not=[
                     models.Filter(
                         should=[
-                            models.FieldCondition(key="score", range=models.Range(lt=50)),
-                            models.FieldCondition(key="attempts", range=models.Range(gt=5)),
-                        ]
-                    )
-                ]
+                            models.FieldCondition(
+                                key="score",
+                                range=models.Range(lt=50),
+                            ),
+                            models.FieldCondition(
+                                key="attempts",
+                                range=models.Range(gt=5),
+                            ),
+                        ],
+                    ),
+                ],
             ),
         ),
         (
             "tags is empty",
             models.Filter(
-                must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))]
+                must=[
+                    models.IsEmptyCondition(is_empty=models.PayloadField(key="tags"))
+                ],
             ),
         ),
     ],
@@ -695,9 +821,10 @@ def test_dot_notation_nested_field():
     expected = models.Filter(
         must=[
             models.FieldCondition(
-                key="country.name", match=models.MatchValue(value="Germany")
-            )
-        ]
+                key="country.name",
+                match=models.MatchValue(value="Germany"),
+            ),
+        ],
     )
     assert result == expected
 
@@ -708,9 +835,10 @@ def test_array_projection_nested():
     expected = models.Filter(
         must=[
             models.FieldCondition(
-                key="country.cities[].population", range=models.Range(gte=9.0)
-            )
-        ]
+                key="country.cities[].population",
+                range=models.Range(gte=9.0),
+            ),
+        ],
     )
     assert result == expected
 
@@ -724,9 +852,11 @@ def test_array_projection_nested():
                 must=[
                     models.FieldCondition(
                         key="message",
-                        match=models.MatchValue(value="It's a test with a backslash \\ and another quote '"),
-                    )
-                ]
+                        match=models.MatchValue(
+                            value="It's a test with a backslash \\ and another quote '",
+                        ),
+                    ),
+                ],
             ),
         ),
         (
@@ -734,9 +864,10 @@ def test_array_projection_nested():
             models.Filter(
                 must=[
                     models.FieldCondition(
-                        key="path", match=models.MatchValue(value="C:\\Users\\file.txt")
-                    )
-                ]
+                        key="path",
+                        match=models.MatchValue(value="C:\\Users\\file.txt"),
+                    ),
+                ],
             ),
         ),
     ],
@@ -750,6 +881,8 @@ def test_not_single_condition():
     query = "NOT active = TRUE"
     result = where2filter(query)
     expected = models.Filter(
-        must_not=[models.FieldCondition(key="active", match=models.MatchValue(value=True))]
+        must_not=[
+            models.FieldCondition(key="active", match=models.MatchValue(value=True)),
+        ],
     )
     assert result == expected
