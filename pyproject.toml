@@ -7,12 +7,11 @@ authors = [
 ]
 keywords = ["qdrant", "vector", "search", "sql"]
 readme = "README.md"
-license = { file="LICENSE" }
+license = "GPL-3.0-or-later"
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
-] 
+]
 dependencies = [
   "parsimonious>=0.10.0,<1.0",
   "qdrant-client>=1.14.2,<2.0"
