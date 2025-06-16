@@ -1,5 +1,6 @@
 [project]
 name = "qdrant-vsql"
+dynamic = ["version"]
 description = "Give Qdrant a SQL style"
 authors = [
   { name="Raul Carlomagno", email="rcarlomagno@gmail.com" }  
@@ -24,7 +25,7 @@ Repository = "https://github.com/raulcarlomagno/qdrant_vsql"
 Issues = "https://github.com/raulcarlomagno/qdrant_vsql/issues"
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
@@ -38,3 +39,6 @@ line-length = 88
 target-version = "py39"
 select = ["ALL"]
 ignore = ["D203", "D213"]
+
+[tool.setuptools_scm]
+write_to = "src/qdrant_vsql/_version.py"
