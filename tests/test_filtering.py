@@ -152,30 +152,6 @@ def test_in_list_conditions(query, expected_filter):
     "query, expected_filter",
     [
         (
-            "price BETWEEN 10 AND 100",
-            models.Filter(
-                must=[models.FieldCondition(key="price", range=models.Range(gte=10, lte=100))]
-            ),
-        ),
-        (
-            "discount NOT BETWEEN 0 AND 0.5",
-            models.Filter(
-                must_not=[
-                    models.FieldCondition(key="discount", range=models.Range(gte=0, lte=0.5))
-                ]
-            ),
-        ),
-    ],
-)
-def test_between_conditions(query, expected_filter):
-    result = where2filter(query)
-    assert result == expected_filter
-
-
-@pytest.mark.parametrize(
-    "query, expected_filter",
-    [
-        (
             "age = 30",
             models.Filter(
                 must=[models.FieldCondition(key="age", match=models.MatchValue(value=30))]
@@ -194,28 +170,6 @@ def test_between_conditions(query, expected_filter):
     ],
 )
 def test_simple_equality_conditions(query, expected_filter):
-    result = where2filter(query)
-    assert result == expected_filter
-
-
-@pytest.mark.parametrize(
-    "query, expected_filter",
-    [
-        (
-            "email IS NULL",
-            models.Filter(
-                must=[models.IsNullCondition(is_null=models.PayloadField(key="email"))]
-            ),
-        ),
-        (
-            "phone IS NOT NULL",
-            models.Filter(
-                must_not=[models.IsNullCondition(is_null=models.PayloadField(key="phone"))]
-            ),
-        ),
-    ],
-)
-def test_null_conditions(query, expected_filter):
     result = where2filter(query)
     assert result == expected_filter
 
@@ -241,32 +195,6 @@ def test_or_and_bool():
     assert result == expected
 
 
-
-
-@pytest.mark.parametrize(
-    "query, expected_filter",
-    [
-        (
-            "COUNT(tags) >= 3",
-            models.Filter(
-                must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
-            ),
-        ),
-        (
-            "COUNT(comments) BETWEEN 5 AND 20",
-            models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="comments", values_count=models.ValuesCount(gte=5, lte=20)
-                    )
-                ]
-            ),
-        ),
-    ],
-)
-def test_count_conditions(query, expected_filter):
-    result = where2filter(query)
-    assert result == expected_filter
 
 
 def test_nested_field():
@@ -361,15 +289,6 @@ def test_empty_string():
     result = where2filter(query)
     expected = models.Filter(
         must=[models.FieldCondition(key="notes", match=models.MatchValue(value=""))]
-    )
-    assert result == expected
-
-
-def test_empty_array():
-    query = "attachments = []"
-    result = where2filter(query)
-    expected = models.Filter(
-        must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="attachments"))]
     )
     assert result == expected
 
@@ -493,10 +412,26 @@ def test_string_match_conditions(query, expected_filter):
                 ]
             ),
         ),
+    ],
+)
+def test_range_conditions(query, expected_filter):
+    result = where2filter(query)
+    assert result == expected_filter
+
+
+@pytest.mark.parametrize(
+    "query, expected_filter",
+    [
         (
             "COUNT(tags) >= 3",
             models.Filter(
                 must=[models.FieldCondition(key="tags", values_count=models.ValuesCount(gte=3))]
+            ),
+        ),
+        (
+            "COUNT(members) < 2",
+            models.Filter(
+                must=[models.FieldCondition(key="members", values_count=models.ValuesCount(lt=2))]
             ),
         ),
         (
@@ -511,7 +446,7 @@ def test_string_match_conditions(query, expected_filter):
         ),
     ],
 )
-def test_range_and_count_conditions(query, expected_filter):
+def test_count_conditions(query, expected_filter):
     result = where2filter(query)
     assert result == expected_filter
 
@@ -535,26 +470,6 @@ def test_range_and_count_conditions(query, expected_filter):
     ],
 )
 def test_complex_negation_logic(query, expected_filter):
-    result = where2filter(query)
-    assert result == expected_filter
-
-
-@pytest.mark.parametrize(
-    "query, expected_filter",
-    [
-        (
-            "color NOT IN ('red', 'blue')",
-            models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="color", match=models.MatchExcept(**{"except": ["red", "blue"]})
-                    )
-                ]
-            ),
-        )
-    ],
-)
-def test_not_in_conditions(query, expected_filter):
     result = where2filter(query)
     assert result == expected_filter
 
@@ -774,7 +689,6 @@ def test_case_insensitive_keyword_combinations(query, expected_filter):
     assert result == expected_filter
 
 
-# --- NESTED FIELD AND NESTED OBJECT FILTER TESTS ---
 def test_dot_notation_nested_field():
     query = "country.name = 'Germany'"
     result = where2filter(query)
