@@ -413,6 +413,18 @@ def test_nested_array_projection():
             f"id IN ('{uuid.UUID('550e8400-e29b-41d4-a716-446655440000')}', '{uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4')}')", # hyphenated and URN
             models.Filter(must=[models.HasIdCondition(has_id=[str(uuid.UUID('550e8400-e29b-41d4-a716-446655440000')), str(uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4'))])]),
         ),
+        (
+            "id != 123",
+            models.Filter(must_not=[models.HasIdCondition(has_id=[123])]),
+        ),
+        (
+            "id <> 123",
+            models.Filter(must_not=[models.HasIdCondition(has_id=[123])]),
+        ),
+        (
+            "id NOT IN (1, 2, 3)",
+            models.Filter(must_not=[models.HasIdCondition(has_id=[1, 2, 3])]),
+        ),
     ],
 )
 def test_id_conditions(query, expected_filter):

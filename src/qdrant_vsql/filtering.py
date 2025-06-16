@@ -26,7 +26,7 @@ qdrant_filter_grammar = Grammar(
     is_null_condition = identifier ws IS ws NOT? ws NULL
     is_empty_condition = identifier ws IS ws EMPTY
     is_empty_array_condition = identifier ws equals ws "[]"
-    has_id_condition = "id" ws (equals / in_op) ws value
+    has_id_condition = "id" ws (equals / not_equals / in_op / not_in_op) ws value
     values_count_condition = COUNT "(" ws identifier ws ")" ws values_count_op
     values_count_op = (gte ws number) / (lte ws number) / (gt ws number) / (lt ws number) / (equals ws number) / (between_op ws number ws AND ws number)
 
@@ -348,10 +348,7 @@ class QdrantFilterVisitor(NodeVisitor):
     def visit_has_id_condition(
         self, _node: Node, visited_children: Any
     ) -> models.Filter:
-        """Handle id = ... and id IN (...) conditions."""
-        # Example structure: ["id", ws, "=", ws, value] or ["id", ws, "IN", ws, list_value]
-        # We need to find the operator and the value.
-        # Filter out whitespace and the 'id' keyword
+        """Handle id = ..., id IN (...), id != ..., id <> ..., and id NOT IN (...) conditions."""
         meaningful_parts = [
             child for child in visited_children if child is not None and child != "id"
         ]
@@ -360,21 +357,46 @@ class QdrantFilterVisitor(NodeVisitor):
             op_node = meaningful_parts[0]
             value_node = meaningful_parts[1]
 
-            op_str = (
-                op_node.upper()
-                if isinstance(op_node, str)
-                else (op_node.text.upper() if hasattr(op_node, "text") else str(op_node).upper())
-            )
+            op_raw = op_node # This will be ['='] or [['<>']] or [['NOT', 'IN']]
 
-            if op_str == "IN":
-                # For IN, the value_node is expected to be a list of values
+            # Flatten the list to get the actual operator string(s)
+            if isinstance(op_raw, list):
+                # If it's [['<>']] or [['NOT', 'IN']]
+                if len(op_raw) == 1 and isinstance(op_raw[0], list):
+                    op_str = " ".join(str(x) for x in op_raw[0]).upper()
+                # If it's ['='] or ['IN']
+                elif len(op_raw) == 1 and isinstance(op_raw[0], str):
+                    op_str = op_raw[0].upper()
+                else:
+                    raise ValueError(f"Unexpected operator format: {op_raw}")
+            elif isinstance(op_raw, str): # Should not happen based on trace, but good for robustness
+                op_str = op_raw.upper()
+            else:
+                raise ValueError(f"Could not extract operator string from {op_raw}")
+
+            is_not_condition = False
+            normalized_op_str = op_str
+
+            if op_str in ["!=", "<>"]:
+                is_not_condition = True
+                normalized_op_str = "="
+            elif op_str == "NOT IN":
+                is_not_condition = True
+                normalized_op_str = "IN"
+
+            if normalized_op_str == "IN":
                 has_id_values = self._flatten_all(value_node)
                 cond = models.HasIdCondition(has_id=has_id_values)
-            else:  # Assuming it's '='
-                # For '=', the value_node is a single value
+            elif normalized_op_str == "=":
                 has_id_values = [value_node] if not isinstance(value_node, list) else value_node
                 cond = models.HasIdCondition(has_id=has_id_values)
-            return models.Filter(must=[cond])
+            else:
+                raise ValueError(f"Unexpected normalized operator for id condition: {normalized_op_str}")
+
+            if is_not_condition:
+                return models.Filter(must_not=[cond])
+            else:
+                return models.Filter(must=[cond])
         else:
             msg = f"Unexpected children for has_id_condition: {visited_children}"
             raise ValueError(msg)
