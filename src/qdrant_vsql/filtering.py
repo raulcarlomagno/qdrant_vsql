@@ -261,8 +261,12 @@ class QdrantFilterVisitor(NodeVisitor):
             if val is None:
                 raise ValueError(f"Missing value for 'IN' comparison on field {identifier}")
             clean_value = self._flatten_all(val)
-            cond = create_field_condition(identifier, match=models.MatchAny(any=clean_value))
-            return models.Filter(must_not=[cond]) if is_not else models.Filter(must=[cond])
+            if is_not:
+                cond = create_field_condition(identifier, match=models.MatchExcept(**{"except":clean_value}))
+                return models.Filter(must=[cond])
+            else:
+                cond = create_field_condition(identifier, match=models.MatchAny(any=clean_value))
+                return models.Filter(must=[cond])
 
         def handle_like(val: Any) -> models.Filter:
             if val is None:

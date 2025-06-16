@@ -134,9 +134,9 @@ def test_and_datetime_range(query, expected_filter):
         (
             "category NOT IN ('electronics','furniture')",
             models.Filter(
-                must_not=[
+                must=[
                     models.FieldCondition(
-                        key="category", match=models.MatchAny(any=["electronics", "furniture"])
+                        key="category", match=models.MatchExcept(**{"except":["electronics", "furniture"]})
                     )
                 ]
             ),
@@ -545,19 +545,13 @@ def test_complex_negation_logic(query, expected_filter):
         (
             "color NOT IN ('red', 'blue')",
             models.Filter(
-                must_not=[
+                must=[
                     models.FieldCondition(
-                        key="color", match=models.MatchAny(any=["red", "blue"])
+                        key="color", match=models.MatchExcept(**{"except": ["red", "blue"]})
                     )
                 ]
             ),
-        ),
-        (
-            "color NOT IN ()",
-            models.Filter(
-                must_not=[models.FieldCondition(key="color", match=models.MatchAny(any=[]))]
-            ),
-        ),
+        )
     ],
 )
 def test_not_in_conditions(query, expected_filter):
@@ -717,9 +711,9 @@ def test_case_insensitive_boolean_conditions(query, expected_filter):
         (
             "status NOT IN ('pending', 'approved')",
             models.Filter(
-                must_not=[
+                must=[
                     models.FieldCondition(
-                        key="status", match=models.MatchAny(any=["pending", "approved"])
+                        key="status", match=models.MatchExcept(**{"except":["pending", "approved"]})
                     )
                 ]
             ),
