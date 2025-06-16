@@ -67,7 +67,7 @@ def test_and_gt_bool():
     "query, expected_filter",
     [
         (
-            "created_at >= '2023-01-01T00:00:00' AND created_at < '2024-01-01T00:00:00'",
+            "created_at >= '2023-01-01T00:00:00' AND created_at < '2024-01-01T00:00:00'",  # noqa: E501
             models.Filter(
                 must=[
                     models.FieldCondition(
@@ -235,7 +235,7 @@ def test_array_in():
 
 
 def test_complex_combined():
-    query = "((status = 'live' AND views > 1000) OR priority IN ('high','urgent')) AND archived = FALSE AND comments_count BETWEEN 1 AND 10"
+    query = "((status = 'live' AND views > 1000) OR priority IN ('high','urgent')) AND archived = FALSE AND comments_count BETWEEN 1 AND 10"  # noqa: E501
     result = where2filter(query)
     expected = models.Filter(
         must=[
@@ -358,7 +358,7 @@ def test_nested_array_projection():
             ),
         ),
         (
-            f"id IN ('{uuid.UUID('550e8400-e29b-41d4-a716-446655440000')}', '{uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4')}')",  # hyphenated and URN
+            f"id IN ('{uuid.UUID('550e8400-e29b-41d4-a716-446655440000')}', '{uuid.UUID('f9168c5e-ceb2-4faa-b6bf-329bf39fa1e4')}')",  # noqa: E501
             models.Filter(
                 must=[
                     models.HasIdCondition(
