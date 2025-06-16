@@ -1,6 +1,5 @@
 [project]
 name = "qdrant-vsql"
-version = "0.1.0"
 description = "Give Qdrant a SQL style"
 authors = [
   { name="Raul Carlomagno", email="rcarlomagno@gmail.com" }  
@@ -19,6 +18,10 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 
+[project.urls]
+Homepage = "https://github.com/raulcarlomagno/qdrant_vsql"
+Repository = "https://github.com/raulcarlomagno/qdrant_vsql"
+Issues = "https://github.com/raulcarlomagno/qdrant_vsql/issues"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

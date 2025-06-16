@@ -37,11 +37,11 @@ pip install qdrant-vsql
 Here's how you can use Qdrant VSQL to build your Qdrant filter queries:
 
 ```python
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient
 from qdrant_vsql.filtering import where2filter
 
 # Initialize Qdrant client (replace with your actual client setup)
-qdrant_client = QdrantClient(":memory:") # Or QdrantClient(host="localhost", port=6333)
+qdrant_client = QdrantClient(":memory:")
 
 # Example 1: Simple AND condition
 query_str_1 = "city = 'London' AND age > 30"
