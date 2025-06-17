@@ -68,7 +68,7 @@ query_str_5 = "event_date BETWEEN '2023-01-01T00:00:00Z' AND '2023-12-31T23:59:5
 qdrant_filter_5 = where2filter(query_str_5)
 
 # Call Qdrant with your filter
-hits = client.query_points(
+hits = qdrant_client.query_points(
     collection_name="my_collection",
     query=np.random.rand(100),
     query_filter=qdrant_filter_1,
