@@ -7,7 +7,7 @@ authors = [
 ]
 keywords = ["qdrant", "vector", "search", "sql"]
 readme = "README.md"
-license = "GPL-3.0-or-later"
+license = "MIT"
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
