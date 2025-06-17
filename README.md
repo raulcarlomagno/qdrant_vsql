@@ -1,8 +1,11 @@
 # Qdrant VSQL
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)
-![License](https://img.shields.io/badge/license-GPLv3-blue)
+![License](https://img.shields.io/badge/license-MIT-blue)
 ![PyPI Version](https://img.shields.io/pypi/v/qdrant-vsql.svg)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Code Style](https://img.shields.io/badge/code_style-ruff-blue)
 
 ## 🚀 Overview
 
@@ -200,7 +203,7 @@ Please refer to our [`CONTRIBUTING.md`](CONTRIBUTING.md) for more detailed guide
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License Version 3 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 Made with ❤️ for the community

@@ -294,14 +294,12 @@ class QdrantFilterVisitor(NodeVisitor):
                 raise ValueError(msg)
             clean_value = self._flatten_all(val)
             if is_not:
-                cond = create_field_condition(
-                    identifier,
-                    match=models.MatchExcept(**{"except": clean_value}),
-                )
-                return models.Filter(must=[cond])
+                match = models.MatchExcept(**{"except": clean_value})
+            else:
+                match = models.MatchAny(any=clean_value)
             cond = create_field_condition(
                 identifier,
-                match=models.MatchAny(any=clean_value),
+                match=match,
             )
             return models.Filter(must=[cond])
 

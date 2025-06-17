@@ -1,13 +1,13 @@
 [project]
 name = "qdrant-vsql"
 dynamic = ["version"]
-description = "Give Qdrant a SQL style"
+description = "Bringing some SQL to Qdrant"
 authors = [
   { name="Raul Carlomagno", email="rcarlomagno@gmail.com" }  
 ]
 keywords = ["qdrant", "vector", "search", "sql"]
 readme = "README.md"
-license = "GPL-3.0-or-later"
+license = "MIT"
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
