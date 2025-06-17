@@ -2,10 +2,11 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![PyPI Version](https://img.shields.io/pypi/v/qdrant-vsql.svg)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Code Style](https://img.shields.io/badge/code_style-ruff-blue)
+![PyPI Version](https://img.shields.io/pypi/v/qdrant-vsql.svg)
+[![PyPI Downloads](https://static.pepy.tech/badge/qdrant-vsql)](https://pepy.tech/projects/qdrant-vsql)
 
 ## 🚀 Overview
 
