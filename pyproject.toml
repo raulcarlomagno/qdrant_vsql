@@ -1,7 +1,7 @@
 [project]
 name = "qdrant-vsql"
 dynamic = ["version"]
-description = "Give Qdrant a SQL style"
+description = "Bringing some SQL to Qdrant"
 authors = [
   { name="Raul Carlomagno", email="rcarlomagno@gmail.com" }  
 ]
